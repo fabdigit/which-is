@@ -1,6 +1,243 @@
 const { rounds: ROUND_COUNT, levels: LEVELS, creatures: CREATURES } = window.FIELD;
 
 const app = document.querySelector("#app");
+const LANG_KEY = "which-is-lang";
+
+const COPY = {
+  en: {
+    title: "Which is?",
+    description: "A field quiz: name the animal or bird from how it looks, where it lives, or the sound it makes.",
+    langLabel: "Language",
+    brand: "Which is?",
+    kicker: "Field quiz",
+    lede: "What animal or bird is it? Choose a field first. Then pick how hard the clues are. Three names, two guesses, and a photo either way.",
+    homeNote: "A miss, or a switch from animals to birds, starts that count over. The streak carries into the next sitting.",
+    "group.animals.label": "Animals",
+    "group.animals.mark": "Paw",
+    "group.animals.blurb": "Mammals, reptiles, and amphibians. No birds.",
+    "group.birds.label": "Birds",
+    "group.birds.mark": "Wing",
+    "group.birds.blurb": "Only birds, from the obvious ones to the ones that look alike.",
+    "group.mix.label": "Mix",
+    "group.mix.mark": "Both",
+    "group.mix.blurb": "Animals and birds in the same sitting.",
+    ask: "How hard?",
+    levelsNote: "Ten creatures. A new sitting skips any you have already had, until that list runs out. Miss once and a second clue appears before the last guess.",
+    changeField: "Change field",
+    "level.easy.label": "Easy",
+    "level.easy.mark": "Look",
+    "level.easy.blurb": "A plain description of the body. The other two names are nothing like it.",
+    "level.medium.label": "Medium",
+    "level.medium.mark": "Home",
+    "level.medium.blurb": "The clue is the kind of home. The three names could be mistaken for neighbors.",
+    "level.hard.label": "Hard",
+    "level.hard.mark": "Call",
+    "level.hard.blurb": "Only the sound it makes, written out. The three names are easy to mix up.",
+    "clue.easy.clue": "The look",
+    "clue.easy.extra": "Where it lives",
+    "clue.medium.clue": "Where it lives",
+    "clue.medium.extra": "The look",
+    "clue.hard.clue": "The call",
+    "clue.hard.extra": "The look",
+    notIt: "Not the {name}. One guess left.",
+    oneLeft: "{n} guess left · keys 1, 2, 3",
+    manyLeft: "{n} guesses left · keys 1, 2, 3",
+    missedBoth: "Both guesses missed.",
+    namedFirst: "Named on the first guess.",
+    namedSecond: "Named on the second guess.",
+    found: "Found",
+    triedOne: "You tried {a}.",
+    triedTwo: "You tried {a} and {b}.",
+    nextCreature: "Next creature",
+    seeCard: "See your card",
+    larger: "Larger",
+    download: "Download",
+    downloadLabel: "Download {name}",
+    magnifyLabel: "View a larger photo of {name}",
+    lightboxLabel: "Larger photo of {name}",
+    fullSize: "Full size",
+    fit: "Fit",
+    close: "Close",
+    fullLabel: "Show the photo at full size",
+    fitLabel: "Fit the photo to the screen",
+    cleanCard: "A clean field card.",
+    guideNamed: "The guide did the naming this time.",
+    goodSitting: "A good sitting.",
+    ofScore: "of {n}",
+    tagFirst: "First guess",
+    tagSecond: "Second guess",
+    tagMissed: "Missed",
+    sameLevel: "Same level",
+    otherLevels: "Other levels",
+    collect: "Collect",
+    collected: "Collected",
+    ready: "Ready",
+    notYet: "Not yet",
+    "badge.animal.title": "Animal badge",
+    "badge.animal.line": "Ten animals, named in a row.",
+    "badge.animal.mark": "Paw",
+    "badge.animal.short": "Animal",
+    "badge.bird.title": "Bird badge",
+    "badge.bird.line": "Ten birds, named in a row.",
+    "badge.bird.mark": "Wing",
+    "badge.bird.short": "Bird",
+    streakMiss: "That miss cleared the streak.",
+    streakEmpty: "Ten in a row of one kind earns its badge.",
+    streakCollected: "{label} streak {count}. Badge collected.",
+    streakReady: "{label} streak {count}. Badge ready to collect.",
+    streakProgress: "{label} streak {count} of {at}",
+  },
+  zh: {
+    title: "是哪一種？",
+    description: "野外問答：根據外形、住處或叫聲，說出這是哪種動物或鳥。",
+    langLabel: "語言",
+    brand: "是哪一種？",
+    kicker: "野外問答",
+    lede: "這是什麼動物，還是什麼鳥？先選範圍，再選線索有多難。三個名字，兩次機會，最後都會看到照片。",
+    homeNote: "答錯，或者從動物換到鳥，計數就重新開始。連勝會留到下一場。",
+    "group.animals.label": "動物",
+    "group.animals.mark": "爪",
+    "group.animals.blurb": "哺乳動物、爬行動物和兩棲動物，不包括鳥。",
+    "group.birds.label": "鳥",
+    "group.birds.mark": "翼",
+    "group.birds.blurb": "只有鳥，從一眼能認出的，到長得很像的。",
+    "group.mix.label": "混合",
+    "group.mix.mark": "皆",
+    "group.mix.blurb": "動物和鳥放在同一場裡。",
+    ask: "有多難？",
+    levelsNote: "十個生物。新的一場會跳過你已經遇過的，直到這份名單用完。答錯一次，最後一猜前會出現第二條線索。",
+    changeField: "換一個範圍",
+    "level.easy.label": "簡單",
+    "level.easy.mark": "看",
+    "level.easy.blurb": "一段平白的外形。另外兩個名字和牠一點也不像。",
+    "level.medium.label": "中等",
+    "level.medium.mark": "住",
+    "level.medium.blurb": "線索是牠住的那種地方。三個名字容易被當成住在附近的種類。",
+    "level.hard.label": "困難",
+    "level.hard.mark": "聲",
+    "level.hard.blurb": "只寫出牠的叫聲。三個名字很容易混在一起。",
+    "clue.easy.clue": "外形",
+    "clue.easy.extra": "住處",
+    "clue.medium.clue": "住處",
+    "clue.medium.extra": "外形",
+    "clue.hard.clue": "叫聲",
+    "clue.hard.extra": "外形",
+    notIt: "不是{name}。還剩一次機會。",
+    oneLeft: "還剩 {n} 次機會 · 按鍵 1、2、3",
+    manyLeft: "還剩 {n} 次機會 · 按鍵 1、2、3",
+    missedBoth: "兩次都沒猜中。",
+    namedFirst: "第一次就說對了。",
+    namedSecond: "第二次說對了。",
+    found: "分佈",
+    triedOne: "你猜了{a}。",
+    triedTwo: "你猜了{a}和{b}。",
+    nextCreature: "下一種",
+    seeCard: "看這張記錄",
+    larger: "放大",
+    download: "下載",
+    downloadLabel: "下載{name}的照片",
+    magnifyLabel: "查看{name}的大圖",
+    lightboxLabel: "{name}的大圖",
+    fullSize: "原尺寸",
+    fit: "適合螢幕",
+    close: "關閉",
+    fullLabel: "按原尺寸顯示照片",
+    fitLabel: "讓照片適合螢幕",
+    cleanCard: "一張乾淨的野外記錄。",
+    guideNamed: "這一場，名字是圖鑑替你說的。",
+    goodSitting: "一場不錯的問答。",
+    ofScore: "/ {n}",
+    tagFirst: "一次猜中",
+    tagSecond: "兩次猜中",
+    tagMissed: "沒猜中",
+    sameLevel: "同一難度",
+    otherLevels: "其他難度",
+    collect: "領取",
+    collected: "已領取",
+    ready: "可領取",
+    notYet: "還沒有",
+    "badge.animal.title": "動物徽章",
+    "badge.animal.line": "連續說出十種動物。",
+    "badge.animal.mark": "爪",
+    "badge.animal.short": "動物",
+    "badge.bird.title": "鳥類徽章",
+    "badge.bird.line": "連續說出十種鳥。",
+    "badge.bird.mark": "翼",
+    "badge.bird.short": "鳥",
+    streakMiss: "這一次答錯，連勝清零了。",
+    streakEmpty: "同一類連續答對十次，就能得到那枚徽章。",
+    streakCollected: "{label}連勝 {count}。徽章已領取。",
+    streakReady: "{label}連勝 {count}。徽章可以領取了。",
+    streakProgress: "{label}連勝 {count} / {at}",
+  },
+};
+
+function loadLang() {
+  try {
+    return localStorage.getItem(LANG_KEY) === "zh" ? "zh" : "en";
+  } catch (error) {
+    return "en";
+  }
+}
+
+function t(key, vars) {
+  const pack = COPY[state.lang] || COPY.en;
+  const raw = pack[key] != null ? pack[key] : COPY.en[key];
+  const template = raw == null ? key : raw;
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (_, name) => (vars[name] == null ? "" : String(vars[name])));
+}
+
+function text(value) {
+  if (state.lang !== "zh" || value == null) return value;
+  const dict = window.FIELD_ZH;
+  if (dict && Object.prototype.hasOwnProperty.call(dict, value)) return dict[value];
+  return value;
+}
+
+function kindText(kind) {
+  if (state.lang !== "zh") return kind;
+  return { Bird: "鳥", Mammal: "哺乳動物", Reptile: "爬行動物", Amphibian: "兩棲動物" }[kind] || text(kind);
+}
+
+function creditText(raw) {
+  if (state.lang !== "zh") return raw;
+  if (raw === "Public domain (CC0), via iNaturalist") return "公有領域（CC0），來自 iNaturalist";
+  return raw
+    .replace(/^Photo: /, "照片：")
+    .replace(/, via iNaturalist$/, "，來自 iNaturalist")
+    .replace(/, via Wikimedia Commons$/, "，來自維基共享資源");
+}
+
+function ensureZhFont() {
+  if (document.querySelector("link[data-zh-font]")) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Noto+Serif+TC:wght@500;600&display=swap";
+  link.setAttribute("data-zh-font", "");
+  document.head.appendChild(link);
+}
+
+function applyLang() {
+  document.documentElement.lang = state.lang === "zh" ? "zh-Hant-TW" : "en";
+  document.title = t("title");
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta) meta.setAttribute("content", t("description"));
+  if (state.lang === "zh") ensureZhFont();
+}
+
+function setLang(next) {
+  if (next !== "en" && next !== "zh") return;
+  if (state.lang === next) return;
+  state.lang = next;
+  try {
+    localStorage.setItem(LANG_KEY, next);
+  } catch (error) {
+    /* the choice still applies for this visit */
+  }
+  applyLang();
+  render();
+}
 
 const GROUPS = {
   animals: {
@@ -28,6 +265,7 @@ const STORE_KEY = "which-is-collection";
 const SEEN_KEY = "which-is-seen";
 
 const state = {
+  lang: loadLang(),
   screen: "home",
   groupId: null,
   levelId: null,
@@ -83,20 +321,24 @@ function collectBadge() {
 }
 
 function streakLine(round) {
-  if (round && !round.correct) return "That miss cleared the streak.";
+  if (round && !round.correct) return t("streakMiss");
   const { side, count } = collection.streak;
-  if (!side || !count) return "Ten in a row of one kind earns its badge.";
-  const label = side === "bird" ? "Bird" : "Animal";
-  if (collection.badges[side]) return `${label} streak ${count}. Badge collected.`;
-  if (count >= BADGE_AT) return `${label} streak ${count}. Badge ready to collect.`;
-  return `${label} streak ${count} of ${BADGE_AT}`;
+  if (!side || !count) return t("streakEmpty");
+  const label = t(side === "bird" ? "badge.bird.short" : "badge.animal.short");
+  const vars = { label, count, at: BADGE_AT };
+  if (collection.badges[side]) return t("streakCollected", vars);
+  if (count >= BADGE_AT) return t("streakReady", vars);
+  return t("streakProgress", vars);
 }
 
 function badgeCopy(side) {
-  if (side === "bird") {
-    return { mark: "Wing", klass: "birds", title: "Bird badge", line: "Ten birds, named in a row." };
-  }
-  return { mark: "Paw", klass: "animals", title: "Animal badge", line: "Ten animals, named in a row." };
+  const kind = side === "bird" ? "bird" : "animal";
+  return {
+    mark: t(`badge.${kind}.mark`),
+    klass: side === "bird" ? "birds" : "animals",
+    title: t(`badge.${kind}.title`),
+    line: t(`badge.${kind}.line`),
+  };
 }
 
 function badgeOffer() {
@@ -110,7 +352,7 @@ function badgeOffer() {
         <strong>${item.title}</strong>
         <span>${item.line}</span>
       </span>
-      <button class="primary" type="button" data-action="collect">Collect</button>
+      <button class="primary" type="button" data-action="collect">${esc(t("collect"))}</button>
     </section>
   `;
 }
@@ -120,9 +362,9 @@ function badgeRow() {
     const item = badgeCopy(side);
     const earned = collection.badges[side];
     const pending = collection.pending === side;
-    const status = earned ? "Collected" : pending ? "Ready" : "Not yet";
+    const status = earned ? t("collected") : pending ? t("ready") : t("notYet");
     const button = pending
-      ? `<button class="primary" type="button" data-action="collect">Collect</button>`
+      ? `<button class="primary" type="button" data-action="collect">${esc(t("collect"))}</button>`
       : "";
     return `
       <article class="badge ${earned ? "earned" : ""}">
@@ -252,7 +494,7 @@ function choose(name) {
     render();
     return;
   }
-  state.status = `Not the ${name}. One guess left.`;
+  state.status = t("notIt", { name: text(name) });
   render();
 }
 
@@ -280,69 +522,75 @@ function showLevels() {
 }
 
 function outcome(round) {
-  if (!round.correct) return "Both guesses missed.";
-  if (round.guesses.length === 1) return "Named on the first guess.";
-  return "Named on the second guess.";
+  if (!round.correct) return t("missedBoth");
+  if (round.guesses.length === 1) return t("namedFirst");
+  return t("namedSecond");
 }
 
 function summaryLine(score) {
-  if (score === state.rounds.length) return "A clean field card.";
-  if (score === 0) return "The guide did the naming this time.";
-  return "A good sitting.";
+  if (score === state.rounds.length) return t("cleanCard");
+  if (score === 0) return t("guideNamed");
+  return t("goodSitting");
+}
+
+function langToggle() {
+  return `
+    <div class="lang-bar">
+      <span class="lang-label" id="lang-label">${esc(t("langLabel"))}</span>
+      <div class="lang-toggle" role="group" aria-labelledby="lang-label">
+        <button type="button" data-action="lang" data-lang="en" aria-pressed="${state.lang === "en"}">English</button>
+        <button type="button" data-action="lang" data-lang="zh" aria-pressed="${state.lang === "zh"}">中文</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderHome() {
   return `
-    <p class="kicker">Field quiz</p>
-    <h1>Which is?</h1>
-    <p class="lede">What animal or bird is it? Choose a field first. Then pick how hard the clues are. Three names, two guesses, and a photo either way.</p>
+    ${langToggle()}
+    <p class="kicker">${esc(t("kicker"))}</p>
+    <h1>${esc(t("brand"))}</h1>
+    <p class="lede">${esc(t("lede"))}</p>
     ${badgeRow()}
     <p class="streak">${esc(streakLine())}</p>
-    <p class="note">A miss, or a switch from animals to birds, starts that count over. The streak carries into the next sitting.</p>
+    <p class="note">${esc(t("homeNote"))}</p>
     <div class="levels">${groupCards()}</div>
   `;
 }
 
 function groupCards() {
-  return ["animals", "birds", "mix"].map((id) => {
-    const item = GROUPS[id];
-    return `
+  return ["animals", "birds", "mix"].map((id) => `
       <button class="level" type="button" data-action="group" data-group="${id}">
-        <span class="mark ${id}">${item.mark}</span>
+        <span class="mark ${id}">${esc(t(`group.${id}.mark`))}</span>
         <span class="copy">
-          <strong>${esc(item.label)}</strong>
-          <span>${esc(item.blurb)}</span>
+          <strong>${esc(t(`group.${id}.label`))}</strong>
+          <span>${esc(t(`group.${id}.blurb`))}</span>
         </span>
         <span class="go" aria-hidden="true">→</span>
       </button>
-    `;
-  }).join("");
+    `).join("");
 }
 
 function renderLevels() {
-  const marks = { easy: "Look", medium: "Home", hard: "Call" };
-  const cards = ["easy", "medium", "hard"].map((id) => {
-    const item = LEVELS[id];
-    return `
+  const cards = ["easy", "medium", "hard"].map((id) => `
       <button class="level" type="button" data-action="level" data-level="${id}">
-        <span class="mark ${id}">${marks[id]}</span>
+        <span class="mark ${id}">${esc(t(`level.${id}.mark`))}</span>
         <span class="copy">
-          <strong>${esc(item.label)}</strong>
-          <span>${esc(item.blurb)}</span>
+          <strong>${esc(t(`level.${id}.label`))}</strong>
+          <span>${esc(t(`level.${id}.blurb`))}</span>
         </span>
         <span class="go" aria-hidden="true">→</span>
       </button>
-    `;
-  }).join("");
+    `).join("");
 
   return `
     <div class="top">
-      <button class="brand" type="button" data-action="home">Which is?</button>
+      <button class="brand" type="button" data-action="home">${esc(t("brand"))}</button>
     </div>
-    <p class="kicker">${esc(group().label)}</p>
-    <h1 class="ask">How hard?</h1>
+    <p class="kicker">${esc(t(`group.${state.groupId}.label`))}</p>
+    <h1 class="ask">${esc(t("ask"))}</h1>
     <div class="levels">${cards}</div>
-    <p class="note">Ten creatures. A new sitting skips any you have already had, until that list runs out. Miss once and a second clue appears before the last guess. <button class="text-back" type="button" data-action="home">Change field</button></p>
+    <p class="note">${esc(t("levelsNote"))} <button class="text-back" type="button" data-action="home">${esc(t("changeField"))}</button></p>
   `;
 }
 
@@ -350,33 +598,34 @@ function renderPlay() {
   const item = level();
   const round = current();
   const creature = round.creature;
-  const primary = creature[item.clue];
+  const primary = text(creature[item.clue]);
   const showExtra = round.guesses.length === 1;
   const letters = ["A", "B", "C"];
   const choices = state.options.map((name, index) => `
     <button class="choice" type="button" data-action="guess" data-index="${index}" ${state.eliminated.has(name) ? "disabled" : ""}>
       <span class="letter">${letters[index]}</span>
-      <span class="name">${esc(name)}</span>
+      <span class="name">${esc(text(name))}</span>
     </button>
   `).join("");
   const extra = showExtra ? `
     <div class="extra">
-      <p class="clue-label">${esc(item.extraLabel)}</p>
-      <p class="clue">${esc(creature[item.extra])}</p>
+      <p class="clue-label">${esc(t(`clue.${item.id}.extra`))}</p>
+      <p class="clue">${esc(text(creature[item.extra]))}</p>
     </div>
   ` : "";
+  const left = guessesLeft();
 
   return `
     <div class="top">
-      <button class="brand" type="button" data-action="home">Which is?</button>
-      <p class="meta">${esc(group().label)} · <span class="pill ${item.id}">${esc(item.label)}</span> ${state.roundIndex + 1} / ${state.rounds.length}</p>
+      <button class="brand" type="button" data-action="home">${esc(t("brand"))}</button>
+      <p class="meta">${esc(t(`group.${state.groupId}.label`))} · <span class="pill ${item.id}">${esc(t(`level.${item.id}.label`))}</span> ${state.roundIndex + 1} / ${state.rounds.length}</p>
     </div>
-    <p class="clue-label" id="clue-label">${esc(item.clueLabel)}</p>
+    <p class="clue-label" id="clue-label">${esc(t(`clue.${item.id}.clue`))}</p>
     <h1 class="clue" tabindex="-1">${esc(primary)}</h1>
     ${extra}
     <p class="status" tabindex="-1">${esc(state.status)}</p>
     <div class="choices">${choices}</div>
-    <p class="guesses">${guessesLeft()} ${guessesLeft() === 1 ? "guess" : "guesses"} left · keys 1, 2, 3</p>
+    <p class="guesses">${esc(t(left === 1 ? "oneLeft" : "manyLeft", { n: left }))}</p>
     <p class="streak">${esc(streakLine())}</p>
   `;
 }
@@ -388,7 +637,7 @@ function imageExtension(url) {
 }
 
 function downloadName(creature) {
-  const base = creature.name.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim() || "photo";
+  const base = text(creature.name).replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim() || "photo";
   return `${base}.${imageExtension(creature.image)}`;
 }
 
@@ -402,11 +651,12 @@ function sameOriginImage(url) {
 
 function downloadAnchor(creature, className) {
   const href = esc(creature.image);
-  const label = esc(`Download ${creature.name}`);
+  const label = esc(t("downloadLabel", { name: text(creature.name) }));
+  const word = esc(t("download"));
   if (!sameOriginImage(creature.image)) {
-    return `<a class="${className}" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${label}">Download</a>`;
+    return `<a class="${className}" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${label}">${word}</a>`;
   }
-  return `<a class="${className}" href="${href}" download="${esc(downloadName(creature))}" aria-label="${label}">Download</a>`;
+  return `<a class="${className}" href="${href}" download="${esc(downloadName(creature))}" aria-label="${label}">${word}</a>`;
 }
 
 function renderReveal() {
@@ -414,37 +664,38 @@ function renderReveal() {
   const creature = round.creature;
   const last = state.roundIndex + 1 >= state.rounds.length;
   const missed = round.guesses.filter((name) => name !== creature.name);
+  const shown = text(creature.name);
   const missLine = missed.length
-    ? `<p class="guesses">You tried ${esc(missed.join(" and "))}.</p>`
+    ? `<p class="guesses">${esc(missed.length === 1 ? t("triedOne", { a: text(missed[0]) }) : t("triedTwo", { a: text(missed[0]), b: text(missed[1]) }))}</p>`
     : "";
 
   return `
     <div class="top">
-      <button class="brand" type="button" data-action="home">Which is?</button>
-      <p class="meta">${esc(group().label)} · <span class="pill ${level().id}">${esc(level().label)}</span> ${state.roundIndex + 1} / ${state.rounds.length}</p>
+      <button class="brand" type="button" data-action="home">${esc(t("brand"))}</button>
+      <p class="meta">${esc(t(`group.${state.groupId}.label`))} · <span class="pill ${level().id}">${esc(t(`level.${level().id}.label`))}</span> ${state.roundIndex + 1} / ${state.rounds.length}</p>
     </div>
-    <div class="photo-wrap" data-name="${esc(creature.name)}">
-      <button class="photo-open" type="button" data-action="magnify" aria-label="View a larger photo of ${esc(creature.name)}">
-        <img src="${esc(creature.image)}" alt="${esc(creature.name)}" />
-        <span class="photo-zoom-label" aria-hidden="true">Larger</span>
+    <div class="photo-wrap" data-name="${esc(shown)}">
+      <button class="photo-open" type="button" data-action="magnify" aria-label="${esc(t("magnifyLabel", { name: shown }))}">
+        <img src="${esc(creature.image)}" alt="${esc(shown)}" />
+        <span class="photo-zoom-label" aria-hidden="true">${esc(t("larger"))}</span>
       </button>
       ${downloadAnchor(creature, "photo-save")}
     </div>
     <div class="outcome">
       <p>${esc(outcome(round))}</p>
-      <p class="pill ${level().id}">${esc(creature.kind)}</p>
+      <p class="pill ${level().id}">${esc(kindText(creature.kind))}</p>
     </div>
-    <h1 class="creature-name">${esc(creature.name)}</h1>
+    <h1 class="creature-name">${esc(shown)}</h1>
     <p class="scientific">${esc(creature.scientific)}</p>
-    <p class="found-label">Found</p>
-    <p class="found">${esc(creature.found)}</p>
-    <p class="about">${esc(creature.about)}</p>
+    <p class="found-label">${esc(t("found"))}</p>
+    <p class="found">${esc(text(creature.found))}</p>
+    <p class="about">${esc(text(creature.about))}</p>
     ${missLine}
     <p class="streak">${esc(streakLine(round))}</p>
     ${badgeOffer()}
-    <p class="credit"><a href="${esc(creature.creditUrl)}" target="_blank" rel="noopener noreferrer">${esc(creature.credit)}</a></p>
+    <p class="credit"><a href="${esc(creature.creditUrl)}" target="_blank" rel="noopener noreferrer">${esc(creditText(creature.credit))}</a></p>
     <div class="actions">
-      <button class="primary" type="button" data-action="next">${last ? "See your card" : "Next creature"}</button>
+      <button class="primary" type="button" data-action="next">${esc(last ? t("seeCard") : t("nextCreature"))}</button>
     </div>
   `;
 }
@@ -453,21 +704,21 @@ function renderSummary() {
   const score = state.rounds.filter((round) => round.correct).length;
   const rows = state.rounds.map((round) => `
     <li>
-      <span>${esc(round.creature.name)}</span>
-      <span class="tag ${round.correct ? "yes" : "no"}">${round.correct ? (round.guesses.length === 1 ? "First guess" : "Second guess") : "Missed"}</span>
+      <span>${esc(text(round.creature.name))}</span>
+      <span class="tag ${round.correct ? "yes" : "no"}">${esc(round.correct ? (round.guesses.length === 1 ? t("tagFirst") : t("tagSecond")) : t("tagMissed"))}</span>
     </li>
   `).join("");
 
   return `
-    <p class="kicker">${esc(group().label)} · ${esc(level().label)}</p>
-    <h1 class="score">${score} <span>of ${state.rounds.length}</span></h1>
+    <p class="kicker">${esc(t(`group.${state.groupId}.label`))} · ${esc(t(`level.${level().id}.label`))}</p>
+    <h1 class="score">${score} <span>${esc(t("ofScore", { n: state.rounds.length }))}</span></h1>
     <p class="lede">${summaryLine(score)}</p>
     <p class="streak">${esc(streakLine())}</p>
     ${badgeOffer()}
     <ul class="results">${rows}</ul>
     <div class="actions">
-      <button class="primary" type="button" data-action="level" data-level="${level().id}">Same level</button>
-      <button class="ghost" type="button" data-action="levels">Other levels</button>
+      <button class="primary" type="button" data-action="level" data-level="${level().id}">${esc(t("sameLevel"))}</button>
+      <button class="ghost" type="button" data-action="levels">${esc(t("otherLevels"))}</button>
     </div>
   `;
 }
@@ -508,6 +759,7 @@ app.addEventListener("click", (event) => {
   if (action === "home") home();
   if (action === "collect") collectBadge();
   if (action === "magnify") openMagnify();
+  if (action === "lang") setLang(button.dataset.lang);
 });
 
 document.addEventListener("keydown", (event) => {
@@ -533,8 +785,8 @@ function toggleMagnifyZoom(layer) {
   const zoom = layer.querySelector("[data-action='zoom-photo']");
   if (!zoom) return;
   const full = layer.classList.contains("is-full");
-  zoom.textContent = full ? "Fit" : "Full size";
-  zoom.setAttribute("aria-label", full ? "Fit the photo to the screen" : "Show the photo at full size");
+  zoom.textContent = full ? t("fit") : t("fullSize");
+  zoom.setAttribute("aria-label", full ? t("fitLabel") : t("fullLabel"));
 }
 
 function onMagnifyClick(event) {
@@ -578,16 +830,17 @@ function openMagnify() {
   layer.className = "lightbox";
   layer.setAttribute("role", "dialog");
   layer.setAttribute("aria-modal", "true");
-  layer.setAttribute("aria-label", `Larger photo of ${creature.name}`);
+  const shown = text(creature.name);
+  layer.setAttribute("aria-label", t("lightboxLabel", { name: shown }));
   layer.innerHTML = `
     <div class="lightbox-bar">
-      <button class="lightbox-zoom" type="button" data-action="zoom-photo" aria-label="Show the photo at full size">Full size</button>
+      <button class="lightbox-zoom" type="button" data-action="zoom-photo" aria-label="${esc(t("fullLabel"))}">${esc(t("fullSize"))}</button>
       ${downloadAnchor(creature, "lightbox-save")}
-      <button class="lightbox-close" type="button" data-action="close-photo">Close</button>
+      <button class="lightbox-close" type="button" data-action="close-photo">${esc(t("close"))}</button>
     </div>
     <div class="lightbox-stage">
       <div class="lightbox-frame">
-        <img src="${esc(creature.image)}" alt="${esc(creature.name)}" />
+        <img src="${esc(creature.image)}" alt="${esc(shown)}" />
       </div>
     </div>
   `;
@@ -629,4 +882,5 @@ function checkDeck() {
 }
 
 checkDeck();
+applyLang();
 render();
