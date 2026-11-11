@@ -381,6 +381,34 @@ function renderPlay() {
   `;
 }
 
+function imageExtension(url) {
+  const path = String(url).split(/[?#]/)[0];
+  const match = path.match(/\.([a-z0-9]+)$/i);
+  return match ? match[1].toLowerCase() : "jpg";
+}
+
+function downloadName(creature) {
+  const base = creature.name.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim() || "photo";
+  return `${base}.${imageExtension(creature.image)}`;
+}
+
+function sameOriginImage(url) {
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch (error) {
+    return false;
+  }
+}
+
+function downloadAnchor(creature, className) {
+  const href = esc(creature.image);
+  const label = esc(`Download ${creature.name}`);
+  if (!sameOriginImage(creature.image)) {
+    return `<a class="${className}" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${label}">Download</a>`;
+  }
+  return `<a class="${className}" href="${href}" download="${esc(downloadName(creature))}" aria-label="${label}">Download</a>`;
+}
+
 function renderReveal() {
   const round = current();
   const creature = round.creature;
@@ -396,7 +424,11 @@ function renderReveal() {
       <p class="meta">${esc(group().label)} · <span class="pill ${level().id}">${esc(level().label)}</span> ${state.roundIndex + 1} / ${state.rounds.length}</p>
     </div>
     <div class="photo-wrap" data-name="${esc(creature.name)}">
-      <img src="${esc(creature.image)}" alt="${esc(creature.name)}" />
+      <button class="photo-open" type="button" data-action="magnify" aria-label="View a larger photo of ${esc(creature.name)}">
+        <img src="${esc(creature.image)}" alt="${esc(creature.name)}" />
+        <span class="photo-zoom-label" aria-hidden="true">Larger</span>
+      </button>
+      ${downloadAnchor(creature, "photo-save")}
     </div>
     <div class="outcome">
       <p>${esc(outcome(round))}</p>
@@ -441,6 +473,7 @@ function renderSummary() {
 }
 
 function render() {
+  closeMagnify({ restore: false });
   const view = {
     home: renderHome,
     levels: renderLevels,
@@ -454,7 +487,12 @@ function render() {
   window.scrollTo(0, 0);
   const img = app.querySelector(".photo-wrap img");
   if (img) {
-    img.addEventListener("error", () => img.parentElement.classList.add("no-photo"));
+    const markMissing = () => {
+      const wrap = img.closest(".photo-wrap");
+      if (wrap) wrap.classList.add("no-photo");
+    };
+    img.addEventListener("error", markMissing);
+    if (img.complete && img.naturalWidth === 0) markMissing();
   }
 }
 
@@ -469,9 +507,15 @@ app.addEventListener("click", (event) => {
   if (action === "levels") showLevels();
   if (action === "home") home();
   if (action === "collect") collectBadge();
+  if (action === "magnify") openMagnify();
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && document.querySelector(".lightbox")) {
+    event.preventDefault();
+    closeMagnify();
+    return;
+  }
   if (state.screen !== "play") return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
   const number = Number(event.key);
@@ -479,6 +523,89 @@ document.addEventListener("keydown", (event) => {
     choose(state.options[number - 1]);
   }
 });
+
+function magnifyFocusables(layer) {
+  return [...layer.querySelectorAll("button, a[href]")].filter((el) => el.getClientRects().length > 0);
+}
+
+function toggleMagnifyZoom(layer) {
+  layer.classList.toggle("is-full");
+  const zoom = layer.querySelector("[data-action='zoom-photo']");
+  if (!zoom) return;
+  const full = layer.classList.contains("is-full");
+  zoom.textContent = full ? "Fit" : "Full size";
+  zoom.setAttribute("aria-label", full ? "Fit the photo to the screen" : "Show the photo at full size");
+}
+
+function onMagnifyClick(event) {
+  const layer = event.currentTarget;
+  if (event.target.closest("[data-action='close-photo']")) {
+    closeMagnify();
+    return;
+  }
+  if (event.target.closest("a")) return;
+  const zoom = event.target.closest("[data-action='zoom-photo']");
+  const photo = event.target.closest(".lightbox-frame img");
+  if (zoom || photo) {
+    if (photo && !window.matchMedia("(max-width: 640px)").matches) return;
+    toggleMagnifyZoom(layer);
+    return;
+  }
+  closeMagnify();
+}
+
+function onMagnifyKeydown(event) {
+  if (event.key !== "Tab") return;
+  const items = magnifyFocusables(event.currentTarget);
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function openMagnify() {
+  if (state.screen !== "reveal") return;
+  const creature = current().creature;
+  const wrap = app.querySelector(".photo-wrap");
+  if (!creature || !wrap || wrap.classList.contains("no-photo") || document.querySelector(".lightbox")) return;
+  const layer = document.createElement("div");
+  layer.className = "lightbox";
+  layer.setAttribute("role", "dialog");
+  layer.setAttribute("aria-modal", "true");
+  layer.setAttribute("aria-label", `Larger photo of ${creature.name}`);
+  layer.innerHTML = `
+    <div class="lightbox-bar">
+      <button class="lightbox-zoom" type="button" data-action="zoom-photo" aria-label="Show the photo at full size">Full size</button>
+      ${downloadAnchor(creature, "lightbox-save")}
+      <button class="lightbox-close" type="button" data-action="close-photo">Close</button>
+    </div>
+    <div class="lightbox-stage">
+      <div class="lightbox-frame">
+        <img src="${esc(creature.image)}" alt="${esc(creature.name)}" />
+      </div>
+    </div>
+  `;
+  document.body.appendChild(layer);
+  document.body.classList.add("lightbox-open");
+  layer.addEventListener("click", onMagnifyClick);
+  layer.addEventListener("keydown", onMagnifyKeydown);
+  layer.querySelector("[data-action='close-photo']").focus();
+}
+
+function closeMagnify(options = {}) {
+  const layer = document.querySelector(".lightbox");
+  if (layer) layer.remove();
+  document.body.classList.remove("lightbox-open");
+  if (options.restore === false) return;
+  const opener = app.querySelector(".photo-open");
+  if (opener) opener.focus({ preventScroll: true });
+}
 
 function checkDeck() {
   Object.entries(CREATURES).forEach(([id, list]) => {
