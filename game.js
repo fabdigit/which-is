@@ -25,6 +25,7 @@ const GROUPS = {
 
 const BADGE_AT = 10;
 const STORE_KEY = "which-is-collection";
+const SEEN_KEY = "which-is-seen";
 
 const state = {
   screen: "home",
@@ -185,8 +186,33 @@ function chooseGroup(groupId) {
   render();
 }
 
+function loadSeen() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SEEN_KEY));
+    if (Array.isArray(saved)) return saved;
+  } catch (error) {
+    /* start over if storage is unreadable */
+  }
+  return [];
+}
+
+function pickFresh(pool) {
+  const seen = loadSeen();
+  const seenIndex = new Map();
+  seen.forEach((name, index) => seenIndex.set(name, index));
+  const unseen = shuffle(pool.filter((creature) => !seenIndex.has(creature.name)));
+  const oldest = pool
+    .filter((creature) => seenIndex.has(creature.name))
+    .sort((a, b) => seenIndex.get(a.name) - seenIndex.get(b.name));
+  const picked = unseen.concat(oldest).slice(0, ROUND_COUNT);
+  const pickedNames = new Set(picked.map((creature) => creature.name));
+  const kept = seen.filter((name) => !pickedNames.has(name));
+  localStorage.setItem(SEEN_KEY, JSON.stringify(kept.concat(picked.map((creature) => creature.name))));
+  return shuffle(picked);
+}
+
 function start(levelId) {
-  const pool = shuffle(deck(levelId)).slice(0, ROUND_COUNT);
+  const pool = pickFresh(deck(levelId));
   state.levelId = levelId;
   state.rounds = pool.map((creature) => ({
     creature,
@@ -316,7 +342,7 @@ function renderLevels() {
     <p class="kicker">${esc(group().label)}</p>
     <h1 class="ask">How hard?</h1>
     <div class="levels">${cards}</div>
-    <p class="note">Five creatures. Miss once and a second clue appears before the last guess. <button class="text-back" type="button" data-action="home">Change field</button></p>
+    <p class="note">Ten creatures. A new sitting skips any you have already had, until that list runs out. Miss once and a second clue appears before the last guess. <button class="text-back" type="button" data-action="home">Change field</button></p>
   `;
 }
 
@@ -457,13 +483,19 @@ document.addEventListener("keydown", (event) => {
 function checkDeck() {
   Object.entries(CREATURES).forEach(([id, list]) => {
     const birds = list.filter((creature) => creature.kind === "Bird").length;
-    if (birds < ROUND_COUNT || list.length - birds < ROUND_COUNT) {
-      throw new Error(`${id} needs ${ROUND_COUNT} birds and ${ROUND_COUNT} animals`);
+    const reserve = ROUND_COUNT * 2;
+    if (birds < reserve || list.length - birds < reserve) {
+      throw new Error(`${id} needs ${reserve} birds and ${reserve} animals`);
     }
+    const used = new Set();
     list.forEach((creature) => {
       if (!creature.options.includes(creature.name) || new Set(creature.options).size !== 3) {
         throw new Error(`Bad options for ${creature.name} on ${id}`);
       }
+      creature.options.forEach((name) => {
+        if (used.has(name)) throw new Error(`Repeated option ${name} on ${id}`);
+        used.add(name);
+      });
       if (!creature.found) throw new Error(`No range for ${creature.name}`);
     });
   });
