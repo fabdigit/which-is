@@ -89,21 +89,21 @@ const COPY = {
   },
   zh: {
     title: "是哪一種？",
-    description: "野外問答：根據外形、住處或叫聲，說出這是哪種動物或鳥。",
+    description: "猜猜這是哪種動物或鳥。看長相、住哪裡，或聽叫聲。",
     langLabel: "語言",
     brand: "是哪一種？",
-    kicker: "野外問答",
-    lede: "這是什麼動物，還是什麼鳥？先選範圍，再選線索有多難。三個名字，兩次機會，最後都會看到照片。",
-    homeNote: "答錯，或者從動物換到鳥，計數就重新開始。連勝會留到下一場。",
+    kicker: "野外猜謎",
+    lede: "猜猜這是什麼。先選動物、鳥，或混在一起，再選難度。每次三個名字，可以猜兩次，最後都會看到照片。",
+    homeNote: "猜錯，或是動物和鳥換著猜，連勝就歸零。下一場會接著算。",
     "group.animals.label": "動物",
     "group.animals.mark": "爪",
-    "group.animals.blurb": "哺乳動物、爬行動物和兩棲動物，不包括鳥。",
+    "group.animals.blurb": "有哺乳類、爬蟲和兩棲，沒有鳥。",
     "group.birds.label": "鳥",
     "group.birds.mark": "翼",
-    "group.birds.blurb": "只有鳥，從一眼能認出的，到長得很像的。",
+    "group.birds.blurb": "只有鳥。有好認的，也有長得很像的。",
     "group.mix.label": "混合",
-    "group.mix.mark": "皆",
-    "group.mix.blurb": "動物和鳥放在同一場裡。",
+    "group.mix.mark": "混",
+    "group.mix.blurb": "動物跟鳥混在一起猜。",
     ask: "有多難？",
     levelsNote: "十個生物。新的一場會跳過你已經遇過的，直到這份名單用完。答錯一次，最後一猜前會出現第二條線索。",
     changeField: "換一個範圍",
@@ -157,15 +157,15 @@ const COPY = {
     ready: "可領取",
     notYet: "還沒有",
     "badge.animal.title": "動物徽章",
-    "badge.animal.line": "連續說出十種動物。",
+    "badge.animal.line": "連對十隻就拿得到。",
     "badge.animal.mark": "爪",
     "badge.animal.short": "動物",
     "badge.bird.title": "鳥類徽章",
-    "badge.bird.line": "連續說出十種鳥。",
+    "badge.bird.line": "連對十隻就拿得到。",
     "badge.bird.mark": "翼",
     "badge.bird.short": "鳥",
     streakMiss: "這一次答錯，連勝清零了。",
-    streakEmpty: "同一類連續答對十次，就能得到那枚徽章。",
+    streakEmpty: "動物或鳥連對十次，就能拿到徽章。",
     streakCollected: "{label}連勝 {count}。徽章已領取。",
     streakReady: "{label}連勝 {count}。徽章可以領取了。",
     streakProgress: "{label}連勝 {count} / {at}",
@@ -371,7 +371,7 @@ function badgeRow() {
         <span class="mark ${item.klass}">${item.mark}</span>
         <span class="copy">
           <strong>${item.title}</strong>
-          <span>${status}. ${item.line}</span>
+          <span>${status}${state.lang === "zh" ? "，" : ". "}${item.line}</span>
         </span>
         ${button}
       </article>
