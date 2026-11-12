@@ -569,11 +569,26 @@ body.lightbox-open { overflow: hidden; }
   font-weight: 700;
 }
 
-.badge-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.tokens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-top: 22px;
+}
+
+.token {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--ink);
+  background: #efe6d6;
+}
+
+.token.pending {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 3px var(--moss-soft);
 }
 
 .badge, .badge-offer {
@@ -699,7 +714,7 @@ body.lightbox-open { overflow: hidden; }
 .tag.no { color: var(--clay); }
 
 @media (max-width: 640px) {
-  .badge-row { grid-template-columns: 1fr; }
+  .token { width: 60px; height: 60px; }
   .page {
     width: min(100% - 16px, 680px);
     margin: 12px auto 28px;

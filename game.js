@@ -11,7 +11,7 @@ const COPY = {
     brand: "Which is?",
     kicker: "Field quiz",
     lede: "What animal or bird is it? Choose a field first. Then pick how hard the clues are. Three names, two guesses, and a photo either way.",
-    homeNote: "A miss, or a switch from animals to birds, starts that count over. The streak carries into the next sitting.",
+    homeNote: "A miss starts that count over. The streak carries into the next sitting.",
     "group.animals.label": "Animals",
     "group.animals.mark": "Paw",
     "group.animals.blurb": "Mammals, reptiles, and amphibians. No birds.",
@@ -70,22 +70,13 @@ const COPY = {
     sameLevel: "Same level",
     otherLevels: "Other levels",
     collect: "Collect",
-    collected: "Collected",
-    ready: "Ready",
-    notYet: "Not yet",
-    "badge.animal.title": "Animal badge",
-    "badge.animal.line": "Ten animals, named in a row.",
-    "badge.animal.mark": "Paw",
-    "badge.animal.short": "Animal",
-    "badge.bird.title": "Bird badge",
-    "badge.bird.line": "Ten birds, named in a row.",
-    "badge.bird.mark": "Wing",
-    "badge.bird.short": "Bird",
+    badgeReadyLine: "Ten right in a row.",
+    badgesReady: "{n} badges ready.",
     streakMiss: "That miss cleared the streak.",
-    streakEmpty: "Ten in a row of one kind earns its badge.",
-    streakCollected: "{label} streak {count}. Badge collected.",
-    streakReady: "{label} streak {count}. Badge ready to collect.",
-    streakProgress: "{label} streak {count} of {at}",
+    streakEmpty: "Ten right in a row earns a badge.",
+    streakReady: "Ten in a row. A badge is ready.",
+    streakHeld: "{count} in a row.",
+    streakProgress: "{count} of {at}",
   },
   zh: {
     title: "是哪一種？",
@@ -94,7 +85,7 @@ const COPY = {
     brand: "是哪一種？",
     kicker: "野外猜謎",
     lede: "猜猜這是什麼。先選動物、鳥，或混在一起，再選難度。每次三個名字，可以猜兩次，最後都會看到照片。",
-    homeNote: "猜錯，或是動物和鳥換著猜，連勝就歸零。下一場會接著算。",
+    homeNote: "猜錯就歸零。下一場會接著算。",
     "group.animals.label": "動物",
     "group.animals.mark": "爪",
     "group.animals.blurb": "有哺乳類、爬蟲和兩棲，沒有鳥。",
@@ -153,22 +144,13 @@ const COPY = {
     sameLevel: "同一難度",
     otherLevels: "其他難度",
     collect: "領取",
-    collected: "已領取",
-    ready: "可領取",
-    notYet: "還沒有",
-    "badge.animal.title": "動物徽章",
-    "badge.animal.line": "連對十隻就拿得到。",
-    "badge.animal.mark": "爪",
-    "badge.animal.short": "動物",
-    "badge.bird.title": "鳥類徽章",
-    "badge.bird.line": "連對十隻就拿得到。",
-    "badge.bird.mark": "翼",
-    "badge.bird.short": "鳥",
-    streakMiss: "這一次答錯，連勝清零了。",
-    streakEmpty: "動物或鳥連對十次，就能拿到徽章。",
-    streakCollected: "{label}連勝 {count}。徽章已領取。",
-    streakReady: "{label}連勝 {count}。徽章可以領取了。",
-    streakProgress: "{label}連勝 {count} / {at}",
+    badgeReadyLine: "連對十次拿到的。",
+    badgesReady: "有 {n} 枚可以領。",
+    streakMiss: "猜錯了，連勝歸零。",
+    streakEmpty: "連對十次，就能拿到一枚徽章。",
+    streakReady: "連對十次了，可以領徽章。",
+    streakHeld: "連對 {count} 次。",
+    streakProgress: "{count} / {at}",
   },
 };
 
@@ -279,78 +261,79 @@ const state = {
 
 let collection = loadCollection();
 
+function freshCollection() {
+  return { streak: 0, badges: [], pending: [] };
+}
+
 function loadCollection() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (saved && saved.streak && saved.badges) return saved;
+    if (saved && typeof saved.streak === "number" && Array.isArray(saved.badges) && Array.isArray(saved.pending)) {
+      return saved;
+    }
+    if (saved && saved.streak && typeof saved.streak.count === "number") {
+      return { streak: saved.streak.count, badges: [], pending: [] };
+    }
   } catch (error) {
     /* keep a fresh collection if storage is unreadable */
   }
-  return { streak: { side: null, count: 0 }, badges: { animal: false, bird: false }, pending: null };
+  return freshCollection();
 }
 
 function saveCollection() {
   localStorage.setItem(STORE_KEY, JSON.stringify(collection));
 }
 
-function sideOf(creature) {
-  return creature.kind === "Bird" ? "bird" : "animal";
-}
-
 function noteResult(round) {
   if (round.noted) return;
   round.noted = true;
   if (!round.correct) {
-    collection.streak = { side: null, count: 0 };
+    collection.streak = 0;
     saveCollection();
     return;
   }
-  const side = sideOf(round.creature);
-  if (collection.streak.side === side) collection.streak.count += 1;
-  else collection.streak = { side, count: 1 };
-  if (collection.streak.count >= BADGE_AT && !collection.badges[side]) collection.pending = side;
+  collection.streak += 1;
+  if (collection.streak % BADGE_AT === 0) {
+    const creature = round.creature;
+    collection.pending.push({ image: creature.image, name: creature.name, kind: creature.kind });
+  }
   saveCollection();
 }
 
 function collectBadge() {
-  if (!collection.pending) return;
-  collection.badges[collection.pending] = true;
-  collection.pending = null;
+  if (!collection.pending.length) return;
+  collection.badges.push(...collection.pending);
+  collection.pending = [];
   saveCollection();
   render();
 }
 
 function streakLine(round) {
   if (round && !round.correct) return t("streakMiss");
-  const { side, count } = collection.streak;
-  if (!side || !count) return t("streakEmpty");
-  const label = t(side === "bird" ? "badge.bird.short" : "badge.animal.short");
-  const vars = { label, count, at: BADGE_AT };
-  if (collection.badges[side]) return t("streakCollected", vars);
-  if (count >= BADGE_AT) return t("streakReady", vars);
-  return t("streakProgress", vars);
+  const count = collection.streak;
+  if (!count) return t("streakEmpty");
+  if (count % BADGE_AT === 0 && collection.pending.length) return t("streakReady");
+  if (count % BADGE_AT === 0) return t("streakHeld", { count });
+  return t("streakProgress", { count: count % BADGE_AT, at: BADGE_AT });
 }
 
-function badgeCopy(side) {
-  const kind = side === "bird" ? "bird" : "animal";
-  return {
-    mark: t(`badge.${kind}.mark`),
-    klass: side === "bird" ? "birds" : "animals",
-    title: t(`badge.${kind}.title`),
-    line: t(`badge.${kind}.line`),
-  };
+function tokenImg(token, pending) {
+  const shown = text(token.name);
+  return `<img class="token${pending ? " pending" : ""}" src="${esc(token.image)}" alt="${esc(shown)}" title="${esc(shown)}" />`;
 }
 
 function badgeOffer() {
-  const side = collection.pending;
-  if (!side) return "";
-  const item = badgeCopy(side);
+  const pending = collection.pending;
+  if (!pending.length) return "";
+  const token = pending[pending.length - 1];
+  const shown = text(token.name);
+  const line = pending.length > 1 ? t("badgesReady", { n: pending.length }) : t("badgeReadyLine");
   return `
     <section class="badge-offer">
-      <span class="mark ${item.klass}">${item.mark}</span>
+      ${tokenImg(token, true)}
       <span class="copy">
-        <strong>${item.title}</strong>
-        <span>${item.line}</span>
+        <strong>${esc(shown)}</strong>
+        <span>${esc(line)}</span>
       </span>
       <button class="primary" type="button" data-action="collect">${esc(t("collect"))}</button>
     </section>
@@ -358,25 +341,13 @@ function badgeOffer() {
 }
 
 function badgeRow() {
-  return `<div class="badge-row">${["animal", "bird"].map((side) => {
-    const item = badgeCopy(side);
-    const earned = collection.badges[side];
-    const pending = collection.pending === side;
-    const status = earned ? t("collected") : pending ? t("ready") : t("notYet");
-    const button = pending
-      ? `<button class="primary" type="button" data-action="collect">${esc(t("collect"))}</button>`
-      : "";
-    return `
-      <article class="badge ${earned ? "earned" : ""}">
-        <span class="mark ${item.klass}">${item.mark}</span>
-        <span class="copy">
-          <strong>${item.title}</strong>
-          <span>${status}${state.lang === "zh" ? "，" : ". "}${item.line}</span>
-        </span>
-        ${button}
-      </article>
-    `;
-  }).join("")}</div>`;
+  if (!collection.badges.length && !collection.pending.length) return "";
+  const earned = collection.badges.map((token) => tokenImg(token, false)).join("");
+  const waiting = collection.pending.map((token) => tokenImg(token, true)).join("");
+  const button = collection.pending.length
+    ? `<button class="primary" type="button" data-action="collect">${esc(t("collect"))}</button>`
+    : "";
+  return `<div class="tokens">${earned}${waiting}${button}</div>`;
 }
 
 function shuffle(list) {
@@ -548,9 +519,7 @@ function langToggle() {
 function renderHome() {
   return `
     ${langToggle()}
-    <p class="kicker">${esc(t("kicker"))}</p>
     <h1>${esc(t("brand"))}</h1>
-    <p class="lede">${esc(t("lede"))}</p>
     ${badgeRow()}
     <p class="streak">${esc(streakLine())}</p>
     <p class="note">${esc(t("homeNote"))}</p>
@@ -590,7 +559,6 @@ function renderLevels() {
     <p class="kicker">${esc(t(`group.${state.groupId}.label`))}</p>
     <h1 class="ask">${esc(t("ask"))}</h1>
     <div class="levels">${cards}</div>
-    <p class="note">${esc(t("levelsNote"))} <button class="text-back" type="button" data-action="home">${esc(t("changeField"))}</button></p>
   `;
 }
 
