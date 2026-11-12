@@ -24,6 +24,7 @@ const COPY = {
     ask: "How hard?",
     levelsNote: "Ten creatures. A new sitting skips any you have already had, until that list runs out. Miss once and a second clue appears before the last guess.",
     changeField: "Change field",
+    home: "Home",
     "level.easy.label": "Easy",
     "level.easy.mark": "Look",
     "level.easy.blurb": "A plain description of the body. The other two names are nothing like it.",
@@ -98,6 +99,7 @@ const COPY = {
     ask: "有多難？",
     levelsNote: "十個生物。新的一場會跳過你已經遇過的，直到這份名單用完。答錯一次，最後一猜前會出現第二條線索。",
     changeField: "換一個範圍",
+    home: "回首頁",
     "level.easy.label": "簡單",
     "level.easy.mark": "看",
     "level.easy.blurb": "一段平白的外形。另外兩個名字和牠一點也不像。",
@@ -483,7 +485,17 @@ function home() {
   state.screen = "home";
   state.groupId = null;
   state.levelId = null;
+  state.rounds = [];
+  state.roundIndex = 0;
+  state.options = [];
+  state.eliminated = new Set();
+  state.status = "";
+  state.lock = false;
   render();
+}
+
+function homeControl() {
+  return `<button class="home-link" type="button" data-action="home" aria-keyshortcuts="h">${esc(t("home"))}</button>`;
 }
 
 function showLevels() {
@@ -554,7 +566,10 @@ function renderLevels() {
 
   return `
     <div class="top">
-      <button class="brand" type="button" data-action="home">${esc(t("brand"))}</button>
+      <div class="top-lead">
+        ${homeControl()}
+        <span class="brand">${esc(t("brand"))}</span>
+      </div>
     </div>
     <p class="kicker">${esc(t(`group.${state.groupId}.label`))}</p>
     <h1 class="ask">${esc(t("ask"))}</h1>
@@ -585,7 +600,10 @@ function renderPlay() {
 
   return `
     <div class="top">
-      <button class="brand" type="button" data-action="home">${esc(t("brand"))}</button>
+      <div class="top-lead">
+        ${homeControl()}
+        <span class="brand">${esc(t("brand"))}</span>
+      </div>
       <p class="meta">${esc(t(`group.${state.groupId}.label`))} · <span class="pill ${item.id}">${esc(t(`level.${item.id}.label`))}</span> ${state.roundIndex + 1} / ${state.rounds.length}</p>
     </div>
     <p class="clue-label" id="clue-label">${esc(t(`clue.${item.id}.clue`))}</p>
@@ -639,7 +657,10 @@ function renderReveal() {
 
   return `
     <div class="top">
-      <button class="brand" type="button" data-action="home">${esc(t("brand"))}</button>
+      <div class="top-lead">
+        ${homeControl()}
+        <span class="brand">${esc(t("brand"))}</span>
+      </div>
       <p class="meta">${esc(t(`group.${state.groupId}.label`))} · <span class="pill ${level().id}">${esc(t(`level.${level().id}.label`))}</span> ${state.roundIndex + 1} / ${state.rounds.length}</p>
     </div>
     <div class="photo-wrap" data-name="${esc(shown)}">
@@ -678,6 +699,9 @@ function renderSummary() {
   `).join("");
 
   return `
+    <div class="top">
+      ${homeControl()}
+    </div>
     <p class="kicker">${esc(t(`group.${state.groupId}.label`))} · ${esc(t(`level.${level().id}.label`))}</p>
     <h1 class="score">${score} <span>${esc(t("ofScore", { n: state.rounds.length }))}</span></h1>
     <p class="lede">${summaryLine(score)}</p>
@@ -736,8 +760,13 @@ document.addEventListener("keydown", (event) => {
     closeMagnify();
     return;
   }
+  if (event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return;
+  if ((event.key === "h" || event.key === "H") && state.screen !== "home" && !document.querySelector(".lightbox")) {
+    event.preventDefault();
+    home();
+    return;
+  }
   if (state.screen !== "play") return;
-  if (event.metaKey || event.ctrlKey || event.altKey) return;
   const number = Number(event.key);
   if (number >= 1 && number <= state.options.length) {
     choose(state.options[number - 1]);
