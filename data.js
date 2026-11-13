@@ -8130,7 +8130,7 @@ window.FIELD = {
         image: "assets/animals/bradypodion-pumilum.jpg",
         credit: "Photo: linkie, CC BY, via iNaturalist",
         creditUrl: "https://www.inaturalist.org/observations/77760959",
-        description: "More than 15 cm. More than 2 cm.",
+        description: "A small grasping climber of bushes around the city at the southwestern tip of South Africa. The body is usually leaf green, and the skin shifts toward darker or brighter tones with mood and temperature. The eyes move separately, and a long tongue is fired at insects on a nearby leaf. The young are born live, and the animal spends the day in a shrub rather than on the ground.",
         habitat: "Lives in South Africa.",
         sound: "Gives a hiss.",
         about: "The tongue is shot out to take insects, and the color shifts with mood and temperature.",
